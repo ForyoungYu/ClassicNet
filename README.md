@@ -12,7 +12,8 @@
 - [x] AlexNet
 - [x] VGG
 - [x] GoogLeNet
-- [ ] ResNet
+- [x] ResNet
 - [ ] DenseNet
+- [x] MobileNet
 
 由于所选数据集要适配各种网络，网络参数会更改通道数和padding参数等，一般不会改变整体网络结构。
