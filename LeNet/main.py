@@ -1,13 +1,16 @@
+import sys
+
+sys.path.append("..")
+from functions import Test
 import torch
 import torch.nn as nn
-from torch.optim import Adam
+import torch.optim as optim
 import torch.utils.data as Data
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 from tensorboardX import SummaryWriter
 
 from LeNet import LeNet
-from functions import *
 
 
 def main():
@@ -47,7 +50,7 @@ def main():
     # 定义网络
     torch.manual_seed(13)
     model = LeNet().to(device)
-    optimizer = Adam(model.parameters(), lr=0.001)
+    optimizer = optim.Adam(model.parameters(), lr=1e-3)
     loss_func = nn.CrossEntropyLoss()
 
     total_train_step = 0
@@ -88,20 +91,8 @@ def main():
                                          param.data.cpu().numpy(),
                                          total_train_step)
 
-        # Test
-        correct = 0.0
-        total = 0
-        model.eval()
-        with torch.no_grad():
-            for inputs, targets in test_dataloader:
-                inputs, targets = inputs.to(device), targets.to(device)
-                outputs = model(inputs)
-                pred = outputs.argmax(dim=1)
-                total += inputs.size(0)
-                correct += torch.eq(pred, targets).sum().item()
-                acc = correct / total
-
-        writer.add_scalar("test_acc", acc, total_test_step)
+        writer.add_scalar("test_acc", Test(model, test_dataloader, device),
+                          total_test_step)
         total_test_step += 1
 
         # 保存模型

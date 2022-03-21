@@ -1,13 +1,15 @@
+import sys
+
+sys.path.append("..")
+from functions import Test
 import torch
 import torch.nn as nn
-from torch.optim import Adam
+import torch.optim as optim
 import torch.utils.data as Data
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 from tensorboardX import SummaryWriter
-
-from GoogLeNet import GoogLeNet
-from functions import *
+from GoogLeNet import *
 
 
 def main():
@@ -18,7 +20,6 @@ def main():
     ])
 
     transform_test = transforms.Compose([
-        transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
         transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
     ])
@@ -49,9 +50,9 @@ def main():
 
     # 定义网络
     torch.manual_seed(13)
-    model = GoogLeNet(10).to(device)
+    model = GoogLeNet(10, init_weights=True).to(device)
     writer = SummaryWriter(log_dir="data/log")
-    optimizer = Adam(model.parameters(), lr=0.003)
+    optimizer = optim.Adam(model.parameters(), lr=1e-3)
     loss_func = nn.CrossEntropyLoss()
 
     total_train_step = 0
@@ -61,8 +62,8 @@ def main():
     acc = 0.0
 
     for e in range(epoch):
-        print("================= EPOCH: {}/{}, ACC: {} ===============".format(
-            e + 1,epoch, acc))
+        print("=========== EPOCH: {}/{}, ACC: {} ==========".format(
+            e + 1, round(epoch, 3), round(acc, 3)))
         # Train
         model.train()
         for step, (b_x, b_y) in enumerate(train_dataloader):
@@ -79,7 +80,7 @@ def main():
             if total_train_step % print_step == 0:
                 # 控制台输出
                 print("Train: {}, Loss: {}".format(total_train_step,
-                                                   loss.item()))
+                                                   round(loss.item(), 4)))
                 # 记录损失
                 writer.add_scalar("train loss",
                                   scalar_value=loss.item(),
@@ -91,21 +92,8 @@ def main():
                                          param.data.cpu().numpy(),
                                          total_train_step)
 
-        # Test
-        correct = 0.0
-        total = 0
-        model.eval()
-        with torch.no_grad():
-            for data in test_dataloader:
-                inputs, targets = data
-                inputs, targets = inputs.to(device), targets.to(device)
-                outputs = model(inputs)
-                pred = outputs.argmax(dim=1)
-                total += inputs.size(0)
-                correct += torch.eq(pred, targets).sum().item()
-                acc = correct / total
-                writer.add_scalar("test_acc", acc, total_test_step)
-
+        acc = Test(model, test_dataloader, device)
+        writer.add_scalar("test_acc", acc, total_test_step)
         total_test_step += 1
 
         # 保存模型

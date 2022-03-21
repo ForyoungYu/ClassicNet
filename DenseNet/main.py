@@ -9,8 +9,7 @@ import torch.utils.data as Data
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 from tensorboardX import SummaryWriter
-
-from VGGNet import *
+from ResNet import *
 
 
 def main():
@@ -51,21 +50,22 @@ def main():
 
     # 定义网络
     torch.manual_seed(13)
-    model = VGGNet19().to(device)
+    model = DenseNet().to(device)
     writer = SummaryWriter(log_dir="data/log")
     optimizer = Adam(model.parameters(), lr=1e-3)
     loss_func = nn.CrossEntropyLoss()
 
     total_train_step = 0
     total_test_step = 0
-    epoch = 600
+    epoch = 80
     print_step = 100
     acc = 0.0
 
     for e in range(epoch):
-        print("================= EPOCH: {}, ACC: {} ===============".format(
-            e + 1, acc))
+        print("=========== EPOCH: {}/{}, ACC: {} ==========".format(
+            e + 1, round(epoch, ), round(acc, 3)))
         # Train
+        model.train()
         for step, (b_x, b_y) in enumerate(train_dataloader):
             b_x = b_x.to(device)
             b_y = b_y.to(device)
@@ -80,7 +80,7 @@ def main():
             if total_train_step % print_step == 0:
                 # 控制台输出
                 print("Train: {}, Loss: {}".format(total_train_step,
-                                                   loss.item()))
+                                                   round(loss.item(), 3)))
                 # 记录损失
                 writer.add_scalar("train loss",
                                   scalar_value=loss.item(),
@@ -92,13 +92,13 @@ def main():
                                          param.data.cpu().numpy(),
                                          total_train_step)
 
-        writer.add_scalar("test_acc", Test(model, test_dataloader, device),
-                          total_test_step)
+        acc = Test(model, test_dataloader, device)
+        writer.add_scalar("test_acc", acc, total_test_step)
         total_test_step += 1
 
         # 保存模型
         torch.save(model.state_dict(),
-                   "data/saved_module/vgg_param_{}.pkl".format(e))
+                   "data/saved_module/dennet_{}.pkl".format(e))
 
 
 if __name__ == "__main__":
