@@ -60,7 +60,7 @@ def main():
 
     # 定义网络
     #  torch.manual_seed(13)
-    model = resnext50_32x4d(num_classes=10).to(device)
+    model = resnet18(num_classes=10, is_se=True).to(device)
     writer = SummaryWriter(log_dir="data/log")
     optimizer = Adam(model.parameters(), lr=1e-3)
     loss_func = nn.CrossEntropyLoss()

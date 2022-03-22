@@ -1,3 +1,8 @@
+import sys
+import os
+
+sys.path.append("..")
+from SENet.senet import SE
 import torch.nn as nn
 import torch
 
@@ -10,6 +15,7 @@ class BasicBlock(nn.Module):
                  out_channel,
                  stride=1,
                  downsample=None,
+                 is_se=False,
                  **kwargs):
         super(BasicBlock, self).__init__()
         self.conv1 = nn.Conv2d(in_channels=in_channel,
@@ -28,6 +34,9 @@ class BasicBlock(nn.Module):
                                bias=False)
         self.bn2 = nn.BatchNorm2d(out_channel)
         self.downsample = downsample
+        self.is_se = is_se
+        if self.is_se:
+            self.se = SE(out_channel, 16)
 
     def forward(self, x):
         identity = x
@@ -40,6 +49,8 @@ class BasicBlock(nn.Module):
 
         out = self.conv2(out)
         out = self.bn2(out)
+        if self.is_se:
+            out *= self.se(out)
 
         out += identity
         out = self.relu(out)
@@ -61,6 +72,7 @@ class Bottleneck(nn.Module):
                  out_channel,
                  stride=1,
                  downsample=None,
+                 is_se=False,
                  groups=1,
                  width_per_group=64):
         super(Bottleneck, self).__init__()
@@ -91,6 +103,9 @@ class Bottleneck(nn.Module):
         self.bn3 = nn.BatchNorm2d(out_channel * self.expansion)
         self.relu = nn.ReLU(inplace=True)
         self.downsample = downsample
+        self.is_se = is_se
+        if self.is_se:
+            self.se = SE(out_channel, 16)
 
     def forward(self, x):
         identity = x
@@ -107,6 +122,8 @@ class Bottleneck(nn.Module):
 
         out = self.conv3(out)
         out = self.bn3(out)
+        if self.is_se:
+            out *= self.se(out)
 
         out += identity
         out = self.relu(out)
@@ -121,11 +138,13 @@ class ResNet(nn.Module):
             blocks_num,
             num_classes=1000,
             include_top=True,
+            is_se=False,
             groups=1, # 为一时表示标准的卷积，其他数时表示组卷积
             width_per_group=64):
         super(ResNet, self).__init__()
         self.include_top = include_top
         self.in_channel = 64
+        self.is_se = is_se
 
         self.groups = groups
         self.width_per_group = width_per_group
@@ -170,6 +189,7 @@ class ResNet(nn.Module):
             block(self.in_channel,
                   channel,
                   downsample=downsample,
+                  is_se=self.is_se,
                   stride=stride,
                   groups=self.groups,
                   width_per_group=self.width_per_group))
@@ -179,6 +199,7 @@ class ResNet(nn.Module):
             layers.append(
                 block(self.in_channel,
                       channel,
+                      is_se=self.is_se,
                       groups=self.groups,
                       width_per_group=self.width_per_group))
 
@@ -203,51 +224,57 @@ class ResNet(nn.Module):
         return x
 
 
-def resnet18(num_classes=1000, include_top=True):
+def resnet18(num_classes=1000, include_top=True, is_se=False):
     # https://download.pytorch.org/models/resnet18-5c106cde.pth
     return ResNet(BasicBlock, [2, 2, 2, 2],
                   num_classes=num_classes,
-                  include_top=include_top)
+                  include_top=include_top,
+                  is_se=is_se)
 
 
-def resnet34(num_classes=1000, include_top=True):
+def resnet34(num_classes=1000, include_top=True, is_se=False):
     # https://download.pytorch.org/models/resnet34-333f7ec4.pth
     return ResNet(BasicBlock, [3, 4, 6, 3],
                   num_classes=num_classes,
-                  include_top=include_top)
+                  include_top=include_top,
+                  is_se=is_se)
 
 
-def resnet50(num_classes=1000, include_top=True):
+def resnet50(num_classes=1000, include_top=True, is_se=False):
     # https://download.pytorch.org/models/resnet50-19c8e357.pth
     return ResNet(Bottleneck, [3, 4, 6, 3],
                   num_classes=num_classes,
-                  include_top=include_top)
+                  include_top=include_top,
+                  is_se=is_se)
 
 
-def resnet101(num_classes=1000, include_top=True):
+def resnet101(num_classes=1000, include_top=True, is_se=False):
     # https://download.pytorch.org/models/resnet101-5d3b4d8f.pth
     return ResNet(Bottleneck, [3, 4, 23, 3],
                   num_classes=num_classes,
-                  include_top=include_top)
+                  include_top=include_top,
+                  is_se=is_se)
 
 
-def resnext50_32x4d(num_classes=1000, include_top=True):
+def resnext50_32x4d(num_classes=1000, include_top=True, is_se=False):
     # https://download.pytorch.org/models/resnext50_32x4d-7cdf4587.pth
     groups = 32
     width_per_group = 4
     return ResNet(Bottleneck, [3, 4, 6, 3],
                   num_classes=num_classes,
                   include_top=include_top,
+                  is_se=is_se,
                   groups=groups,
                   width_per_group=width_per_group)
 
 
-def resnext101_32x8d(num_classes=1000, include_top=True):
+def resnext101_32x8d(num_classes=1000, include_top=True, is_se=False):
     # https://download.pytorch.org/models/resnext101_32x8d-8ba56ff5.pth
     groups = 32
     width_per_group = 8
     return ResNet(Bottleneck, [3, 4, 23, 3],
                   num_classes=num_classes,
                   include_top=include_top,
+                  is_se=is_se,
                   groups=groups,
                   width_per_group=width_per_group)
