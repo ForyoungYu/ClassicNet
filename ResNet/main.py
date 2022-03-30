@@ -132,7 +132,7 @@ def main():
             best_acc = val_accurate
             torch.save(model.state_dict(), save_path)
 
-    print("FINISHED TRAINING, THE BEST ACCURACY IS: {}")
+    print("FINISHED TRAINING, THE BEST ACCURACY IS: {}".format(best_acc))
     #  acc = Test(model, test_dataloader, device)
     #  writer.add_scalar("test_acc", acc, total_test_step)
     #  total_test_step += 1
