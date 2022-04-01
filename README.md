@@ -2,7 +2,7 @@
 
 经典深度学习网络复现。
 
-### Feature
+### Models
 
 为了方便，除LeNet以外，其他网络均使用CIAIR10数据集。
 
@@ -13,7 +13,9 @@
 - [x] VGG
 - [x] GoogLeNet
 - [x] ResNet
+- [x] SENet
 - [ ] DenseNet
 - [x] MobileNet
+- [ ] ShuffleNet
 
 由于所选数据集要适配各种网络，网络参数会更改通道数和padding参数等，一般不会改变整体网络结构。
